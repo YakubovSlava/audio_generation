@@ -58,11 +58,13 @@ class TacotronPreprocessor:
         return res
 
 class TTSDataset(Dataset):
-    def __init__(self, data_path='../RUSLAN_text/metadata_RUSLAN_22200.csv', resample_rate=12000):
+    def __init__(self, data_path='../RUSLAN_text/metadata_RUSLAN_22200.csv', resample_rate=6000, num_elements=None):
         super().__init__()
         self.resample_rate = resample_rate
         self.data_path = data_path
         self.dataset = pd.read_csv(data_path, sep='|', header=None)
+        if num_elements:
+            self.dataset = pd.read_csv(data_path, sep='|', header=None).iloc[:num_elements]
         self.dataset.columns = ['path', 'text']
         self.preprocessor = TacotronPreprocessor()
         self.preprocessor.fit(self.dataset.text.tolist())
@@ -99,9 +101,9 @@ def collate_fn(data):
         temp_audio_length = temp_audio.shape[0]
         new_audios[i][1:temp_audio_length+1] = temp_audio
 
-    spectrogram_transform = transforms.Spectrogram(n_fft=2048, win_length=int(24000*0.05), hop_length=int(24000*0.0125))
+    spectrogram_transform = transforms.Spectrogram(n_fft=2048, win_length=int(12000*0.05), hop_length=int(12000*0.0125))
     spectrogram = spectrogram_transform(new_audios)
-    mel_transform = transforms.MelScale(n_mels=80, sample_rate=24000, n_stft=2048 // 2 + 1)
+    mel_transform = transforms.MelScale(n_mels=80, sample_rate=12000, n_stft=2048 // 2 + 1)
     new_mel = mel_transform(spectrogram)
 
     return new_texts.long(), new_audios, new_mel, spectrogram

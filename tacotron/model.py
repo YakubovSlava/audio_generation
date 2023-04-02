@@ -34,16 +34,16 @@ class EncoderCBHD(nn.Module):
                  K=16
     ):
         super().__init__()
-        self.convolve_sets = [BatchNormConvolution(
+        self.convolve_sets = nn.ModuleList([BatchNormConvolution(
             in_channels=feature_sizes,
             out_channels=feature_sizes,
             kernel_size=x,
             padding=[(x-1)//2, x//2]
-        ) for x in range(1, K+1)]
+        ) for x in range(1, K+1)])
         self.pre_pool_padding = nn.ConstantPad1d((1, 0), 0)
         self.pooling = nn.MaxPool1d(2, 1, 0)
 
-        self.conv1dprojections = [
+        self.conv1dprojections = nn.ModuleList([
             BatchNormConvolution(
             in_channels= K*feature_sizes,
             out_channels=feature_sizes,
@@ -54,7 +54,7 @@ class EncoderCBHD(nn.Module):
             out_channels=feature_sizes,
             kernel_size=3,
             padding=[1, 1])
-        ]
+        ])
         self.highway_net = nn.Sequential(
             nn.Linear(feature_sizes, feature_sizes),
             nn.ReLU(),
@@ -192,7 +192,7 @@ class TacotronDecoder(nn.Module):
             mels.append(output)
             attention_input = self.decoder_prenet(output[:, -1:, :])
 
-        mels = torch.cat(mels, dim = 1)
+        mels = torch.cat(mels, dim=1)
         return mels
 
 
@@ -203,16 +203,16 @@ class PPCBHD(nn.Module):
                  K=8
     ):
         super().__init__()
-        self.convolve_sets = [BatchNormConvolution(
+        self.convolve_sets = nn.ModuleList([BatchNormConvolution(
             in_channels=feature_sizes,
             out_channels=hidden_dim,
             kernel_size=x,
             padding=[(x-1)//2, x//2]
-        ) for x in range(1, K+1)]
-        self.pre_pool_padding = nn.ConstantPad1d((1,0), 0)
+        ) for x in range(1, K+1)])
+        self.pre_pool_padding = nn.ConstantPad1d((1, 0), 0)
         self.pooling = nn.MaxPool1d(2, 1, 0)
 
-        self.conv1dprojections = [
+        self.conv1dprojections = nn.ModuleList([
             BatchNormConvolution(
             in_channels= K*hidden_dim,
             out_channels=2*hidden_dim,
@@ -223,7 +223,7 @@ class PPCBHD(nn.Module):
             out_channels=feature_sizes,
             kernel_size=3,
             padding=[1, 1])
-        ]
+        ])
         self.highway_net = nn.Sequential(
             nn.Linear(feature_sizes, hidden_dim),
             nn.ReLU(),
@@ -250,8 +250,8 @@ class PPCBHD(nn.Module):
         x = self.pooling(x)
         for conv in self.conv1dprojections:
             x = conv(x)
-        x = input+x
-        x = x.transpose(1,2)
+        x = input + x
+        x = x.transpose(1, 2)
         x = self.highway_net(x)
         x = self.gru(x)[0]
         return x
