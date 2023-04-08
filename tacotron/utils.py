@@ -101,6 +101,7 @@ def collate_fn(data):
         temp_audio_length = temp_audio.shape[0]
         new_audios[i][1:temp_audio_length+1] = temp_audio
 
+    # Изменяемые параметры
     spectrogram_transform = transforms.Spectrogram(n_fft=2048, win_length=int(12000*0.05), hop_length=int(12000*0.0125))
     spectrogram = spectrogram_transform(new_audios)
     mel_transform = transforms.MelScale(n_mels=80, sample_rate=12000, n_stft=2048 // 2 + 1)
