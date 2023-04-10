@@ -133,10 +133,10 @@ class TacotronAttention(nn.Module):
         decoder_rnn_output, new_attention_hidden_states = self.decoder_rnn(decoder_output, prev_hidden_state)
         decoder_output = self.decoder_linear(decoder_rnn_output) ### [batch_sze, 1, hidden_state]
         encoder_output = self.encoder_linear(encoder_output) ### [batch_sze, time, hidden_state]
-        attention_weights = decoder_output + encoder_output ### [batch_sze, time, hidden_state]
+        attention_weights = nn.functional.tanh(decoder_output + encoder_output) ### [batch_sze, time, hidden_state]
         attention_weights = self.alignment_scores_linear(attention_weights) ### [batch_sze, time, 1]
         attention_weights = self.softmax(attention_weights) ### [batch_sze, time, 1]
-        context_vector = (encoder_output.transpose(1,2) @ attention_weights).transpose(1,2)
+        context_vector = (encoder_output.transpose(1, 2) @ attention_weights).transpose(1, 2)
         context_vector = torch.cat([decoder_output, context_vector], dim=2)
         context_vector = self.before_rnn_projection(context_vector)
 
