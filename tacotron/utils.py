@@ -6,6 +6,7 @@ import torchaudio
 import torchaudio.functional as F
 from torch.utils.data import Dataset
 from torchaudio import transforms
+from torchaudio.functional import preemphasis
 
 
 class TacotronPreprocessor:
@@ -58,7 +59,7 @@ class TacotronPreprocessor:
         return res
 
 class TTSDataset(Dataset):
-    def __init__(self, data_path='../RUSLAN_text/metadata_RUSLAN_22200.csv', resample_rate=6000, num_elements=None):
+    def __init__(self, data_path='../RUSLAN_text/metadata_RUSLAN_16269.csv', resample_rate=6000, num_elements=None):
         super().__init__()
         self.resample_rate = resample_rate
         self.data_path = data_path
@@ -102,9 +103,19 @@ def collate_fn(data):
         new_audios[i][1:temp_audio_length+1] = temp_audio
 
     # Изменяемые параметры
-    spectrogram_transform = transforms.Spectrogram(n_fft=2048, win_length=int(12000*0.05), hop_length=int(12000*0.0125))
+    new_audios = preemphasis(new_audios)
+    spectrogram_transform = transforms.Spectrogram(n_fft=2048, win_length=int(24000*0.05), hop_length=int(24000*0.0125),
+                                                   power=1.2)
     spectrogram = spectrogram_transform(new_audios)
-    mel_transform = transforms.MelScale(n_mels=80, sample_rate=12000, n_stft=2048 // 2 + 1)
-    new_mel = mel_transform(spectrogram)
+    mel_transform = transforms.MelScale(n_mels=80, sample_rate=24000, n_stft=2048 // 2 + 1)
+    new_mel = mel_transform(spectrogram.abs())
+
+    ### Амплитуда в децибелы
+    spectrogram = 20 * torch.log10(torch.clamp(spectrogram.abs(), min=1e-5))
+    new_mel = 20 * torch.log10(torch.clamp(new_mel, min=1e-5))
+
+    ### Нормализация
+    spectrogram = torch.clamp((spectrogram + 80) / 100, 0, 1)
+    new_mel = torch.clamp((new_mel+100) / 100, 0, 1)
 
     return new_texts.long(), new_audios, new_mel, spectrogram

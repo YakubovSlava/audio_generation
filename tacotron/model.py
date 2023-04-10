@@ -126,6 +126,7 @@ class TacotronAttention(nn.Module):
         self.gru2 = nn.GRU(self.work_dim, self.work_dim, batch_first=True)
         self.output_linear = nn.Linear(self.work_dim, self.num_mel * self.reduction_factor)
 
+    ### Необходимо добавить тангенс
     def forward(self, decoder_output, encoder_output, prev_hidden_state = None, prev_gru1=None, prev_gru2=None):
         decoder_rnn_output, new_attention_hidden_states = self.decoder_rnn(decoder_output, prev_hidden_state)
         decoder_output = self.decoder_linear(decoder_rnn_output) ### [batch_sze, 1, hidden_state]
